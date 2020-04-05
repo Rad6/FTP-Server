@@ -15,3 +15,21 @@
 2020-04-05 18:21:27,594  root  INFO  ('127.0.0.1', 48544) is connected
 2020-04-05 18:21:38,350  root  INFO  ('127.0.0.1', 48544) is gone
 2020-04-05 18:21:43,898  root  INFO  ('127.0.0.1', 48540) is gone
+2020-04-05 20:11:02,978  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 20:11:07,827  root  INFO  ('127.0.0.1', 49796) and ('127.0.0.1', 50770) is connected
+2020-04-05 20:11:23,012  root  INFO  ('127.0.0.1', 49802) and ('127.0.0.1', 50776) is connected
+2020-04-05 20:11:30,761  root  INFO  ('127.0.0.1', 49802) is gone
+2020-04-05 20:11:39,835  root  INFO  ('127.0.0.1', 49796) is gone
+2020-04-05 20:29:40,695  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 20:29:43,268  root  INFO  ('127.0.0.1', 50178) and ('127.0.0.1', 51152) is connected
+2020-04-05 20:29:51,999  root  INFO  ('127.0.0.1', 50182) and ('127.0.0.1', 51156) is connected
+2020-04-05 20:30:01,913  root  INFO  ('127.0.0.1', 51156) ('127.0.0.1', 50182) is gone
+2020-04-05 20:30:10,859  root  INFO  ('127.0.0.1', 51152) ('127.0.0.1', 50178) is gone
+2020-04-05 20:30:54,348  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 20:30:57,551  root  INFO  ('127.0.0.1', 50200) and ('127.0.0.1', 51174) is connected
+2020-04-05 20:31:01,863  root  INFO  ('127.0.0.1', 50206) and ('127.0.0.1', 51180) is connected
+2020-04-05 20:31:04,763  root  INFO  ('127.0.0.1', 51180) ('127.0.0.1', 50206) is gone
+2020-04-05 20:31:08,573  root  INFO  ('127.0.0.1', 51174) ('127.0.0.1', 50200) is gone
+2020-04-05 20:31:44,493  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 20:31:48,464  root  INFO  ('127.0.0.1', 50214) and ('127.0.0.1', 51188) is connected
+2020-04-05 20:31:51,815  root  INFO  ('127.0.0.1', 51188) ('127.0.0.1', 50214) is gone

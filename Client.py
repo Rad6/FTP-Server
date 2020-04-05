@@ -11,15 +11,15 @@ class Client:
     def __init__(self):
         self.HOST = "localhost"
         self.PORT_COMMAND = 8080
-        self.PORT_DATA = 8000
+        self.PORT_DATA = 8081
         self.STATE = State.start
         self.authenticated = False
 
     def run(self):
         socket_command = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print(self.HOST, self.PORT_COMMAND)
+        socket_data = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket_command.connect((self.HOST, self.PORT_COMMAND))
-        
+        socket_data.connect((self.HOST, self.PORT_DATA))
 
         while True:
             
@@ -33,7 +33,7 @@ class Client:
 
    
         socket_command.close()
-
+        socket_data.close()
 
 if __name__ == '__main__':
     client = Client()

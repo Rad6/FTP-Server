@@ -2,30 +2,35 @@ import socket
 import json
 import logging
 import threading
-from Utills import ResState, mapCommands
+from Utills import ResState, mapCommands, FTPSocks
 
 class ClientThread(threading.Thread):
-    def __init__(self, _socket, _address):
-        self.socket_client = _socket
-        self.address_client = _address
+    def __init__(self, ftpsocks):
+        # self.socket_client_cmd = _socket_cmd
+        # self.address_client_cmd = _address_cmd
+        # self.socket_client_data= _socket_data
+        # self.address_client_data = _address_data
+        self.ftpsocks = ftpsocks
         threading.Thread.__init__(self)
 
     def run(self):
         msg = ''
         while True:
-            data = self.socket_client.recv(2048)
+            data = self.ftpsocks.socket_cmd.recv(2048)
             message = data.decode()
 
-            state = mapCommands(self.socket_client, message)
+            state = mapCommands(self.ftpsocks, message)
             if state == ResState.quit:
                 break
 
-            self.socket_client.sendall(f"got ur message in state {state.name}".encode())
+            self.ftpsocks.socket_cmd.sendall(f"got ur message in state {state.name}".encode())
         
-        print ("# Client ", self.address_client , " is gone")
-        logging.info(f"{self.address_client} is gone")
-        self.socket_client.close()
+        # logging
+        print ("# Client ", self.ftpsocks.address_cmd, self.ftpsocks.address_data , " is gone")
+        logging.info(f"{self.ftpsocks.address_data} {self.ftpsocks.address_cmd} is gone")
 
+        self.ftpsocks.socket_cmd.close()
+        self.ftpsocks.socket_data.close()
 
 class Server:
     def __init__(self):
@@ -52,15 +57,26 @@ class Server:
         )
 
         sock_command = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock_data = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock_data.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock_command.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock_command.bind((self.HOST, 8080))
+        sock_data.bind((self.HOST, 8081))
 
         while True:
-            sock_command.listen(1)
-            socket_client, address_client = sock_command.accept()
-            print(f"{address_client} is connected")
-            logging.info(f"{address_client} is connected")
-            thread_client = ClientThread(socket_client, address_client)
+            sock_command.listen()
+            sock_data.listen()
+            socket_client_cmd, address_client_cmd = sock_command.accept()
+            socket_client_data, address_client_data = sock_data.accept()
+            ftpsocks = FTPSocks(
+                socket_client_cmd, 
+                address_client_cmd, 
+                socket_client_data, 
+                address_client_data
+            )
+            print(f"{address_client_cmd} and {address_client_data} is connected")
+            logging.info(f"{address_client_cmd} and {address_client_data} is connected")
+            thread_client = ClientThread(ftpsocks)
             thread_client.start()
 
 
