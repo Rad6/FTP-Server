@@ -29,6 +29,14 @@ class Client:
                 break
             data = socket_command.recv(2048)
             print(data.decode())
+
+            if data.decode() == "226 List transfer done.":
+                datadata = socket_data.recv(2048)
+                # print(datadata.decode())
+                spdata = datadata.decode().split("$$")
+                for item in spdata:
+                    print(item)
+            
             
 
    

@@ -3,14 +3,12 @@ import json
 import logging
 import threading
 from Utills import ResState, mapCommands, FTPSocks
+import os
 
 class ClientThread(threading.Thread):
-    def __init__(self, ftpsocks):
-        # self.socket_client_cmd = _socket_cmd
-        # self.address_client_cmd = _address_cmd
-        # self.socket_client_data= _socket_data
-        # self.address_client_data = _address_data
+    def __init__(self, ftpsocks, basedir):
         self.ftpsocks = ftpsocks
+        self.basedir = basedir
         threading.Thread.__init__(self)
 
     def run(self):
@@ -19,11 +17,9 @@ class ClientThread(threading.Thread):
             data = self.ftpsocks.socket_cmd.recv(2048)
             message = data.decode()
 
-            state = mapCommands(self.ftpsocks, message)
+            state = mapCommands(self.ftpsocks, message, self.basedir)
             if state == ResState.quit:
                 break
-
-            self.ftpsocks.socket_cmd.sendall(f"got ur message in state {state.name}".encode())
         
         # logging
         print ("# Client ", self.ftpsocks.address_cmd, self.ftpsocks.address_data , " is gone")
@@ -41,6 +37,7 @@ class Server:
         self.HOST = "localhost"
         self.LOGGING = data['logging']['enable']
         self.PATH_LOGGING = data['logging']['path']
+        self.BASE_DIR = os.getcwd()
 
         # configuration of logging
         logging.basicConfig(
@@ -49,7 +46,6 @@ class Server:
             format='%(asctime)s  %(name)s  %(levelname)s  %(message)s',
             level=logging.DEBUG
         )
-
 
     def run(self):
         logging.info(
@@ -76,7 +72,7 @@ class Server:
             )
             print(f"{address_client_cmd} and {address_client_data} is connected")
             logging.info(f"{address_client_cmd} and {address_client_data} is connected")
-            thread_client = ClientThread(ftpsocks)
+            thread_client = ClientThread(ftpsocks, self.BASE_DIR)
             thread_client.start()
 
 
