@@ -2,6 +2,7 @@ import socket
 import json
 import logging
 import threading
+from Utills import ResState, mapCommands
 
 class ClientThread(threading.Thread):
     def __init__(self, _socket, _address):
@@ -14,14 +15,15 @@ class ClientThread(threading.Thread):
         while True:
             data = self.socket_client.recv(2048)
             message = data.decode()
-            if message == 'QUIT' or message == "":
-              break
-            else:
-                unf = message.split(" ")
-                print(unf)
-                self.socket_client.sendall("got ur message".encode())
-            print (f"#Client {self.address_client} : ", message)
+
+            state = mapCommands(self.socket_client, message)
+            if state == ResState.quit:
+                break
+
+            self.socket_client.sendall(f"got ur message in state {state.name}".encode())
+        
         print ("# Client ", self.address_client , " is gone")
+        logging.info(f"{self.address_client} is gone")
         self.socket_client.close()
 
 

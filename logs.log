@@ -1,0 +1,17 @@
+2020-04-05 18:14:27,496  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 18:14:37,001  root  INFO  ('127.0.0.1', 48410) is connected
+2020-04-05 18:14:51,288  root  INFO  ('127.0.0.1', 48414) is connected
+2020-04-05 18:15:45,428  root  INFO  ('127.0.0.1', 48436) is connected
+2020-04-05 18:16:53,932  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 18:16:56,387  root  INFO  ('127.0.0.1', 48444) is connected
+2020-04-05 18:18:38,221  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 18:18:40,690  root  INFO  ('127.0.0.1', 48470) is connected
+2020-04-05 18:19:47,763  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 18:19:49,382  root  INFO  ('127.0.0.1', 48498) is connected
+2020-04-05 18:21:13,613  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-05 18:21:15,513  root  INFO  ('127.0.0.1', 48532) is connected
+2020-04-05 18:21:22,029  root  INFO  ('127.0.0.1', 48532) is gone
+2020-04-05 18:21:23,074  root  INFO  ('127.0.0.1', 48540) is connected
+2020-04-05 18:21:27,594  root  INFO  ('127.0.0.1', 48544) is connected
+2020-04-05 18:21:38,350  root  INFO  ('127.0.0.1', 48544) is gone
+2020-04-05 18:21:43,898  root  INFO  ('127.0.0.1', 48540) is gone
