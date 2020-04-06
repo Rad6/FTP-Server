@@ -1,5 +1,7 @@
 import socket
 import enum
+from pathlib import Path
+import os
 
 class State(enum.Enum): 
     start        = 1
@@ -27,6 +29,9 @@ class Client:
             socket_command.sendall(_input.encode())
             if _input == 'QUIT':
                 break
+            if _input == '':
+                continue
+            
             data = socket_command.recv(2048)
             print(data.decode())
 
@@ -41,19 +46,17 @@ class Client:
                         print(item)
             
             if data.decode() == "226 Successful Download.": # DL response
-                length_of_data = int(socket_data.recv(1024).decode())
-                socket_data.sendall("ok".encode())
-                with open(f"dl_{_input.split(' ')[1]}", 'wb') as file_to_write:
-                    while True:
+                data_len  = 0
+                count = 0
+                # with open(f"dl_{_input.split(' ')[1]}", 'wb') as file_to_write:
+                with open(os.path.join(Path.home(), f"Downloads/{_input.split(' ')[1]}"), 'wb') as file_to_write:
+                    data_len = int(socket_data.recv(13).decode())
+                    while count < data_len:
                         datadata = socket_data.recv(10)
-                        print(datadata)
-                        if datadata == "":
-                            break
-                            file_to_write.write(datadata)
+                        count += len(datadata)
+                        file_to_write.write(datadata)
                     file_to_write.close()
             
-
-   
         socket_command.close()
         socket_data.close()
 

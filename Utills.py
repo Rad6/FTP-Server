@@ -186,14 +186,20 @@ def CMD_download(ftpsocks, basedir, command):
     elif len(spcmd) == 2:
         if spcmd[1] == "":
             msg  = "501 Syntax error in parameter or arguments."
-        else:            
-            with open(spcmd[1], 'rb') as file:
-                # file
-                # for data in file:
-                #     print(data)
-                #     ftpsocks.socket_data.sendall(data)
-                data = file.read(1024)
-                while data:
-                    ftpsocks.socket_data.sendall(data)
-                msg = "226 Successful Download."
+        else: 
+            try:
+                with open(spcmd[1], 'rb') as file:
+                    data_len = str(os.path.getsize(spcmd[1]))
+                    sendable_len = ""
+                    for _ in range(13 - len(data_len)):
+                        sendable_len += '0'
+                    sendable_len += data_len
+                    ftpsocks.socket_data.sendall(f"{sendable_len}".encode())
+                    for data in file:
+                            ftpsocks.socket_data.sendall(data)
+                    msg = "226 Successful Download."
+                    logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} downloaded {spcmd[1]}")
+            except:
+                msg = "500 Error."
+
     ftpsocks.socket_cmd.sendall(msg.encode())
