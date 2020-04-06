@@ -1,5 +1,6 @@
 import enum
 import os
+import logging
 
 class FTPSocks:
     def __init__(self, _socket_cmd, _address_cmd, _socket_data, _address_data):
@@ -63,8 +64,10 @@ def CMD_list(ftpsocks):
             msg += dirs[i]
         else:
             msg += "$$" + dirs[i]
-
-    ftpsocks.socket_data.sendall(msg.encode())
+    if msg == "":
+        ftpsocks.socket_data.sendall("$$".encode())    
+    else:
+        ftpsocks.socket_data.sendall(msg.encode())
     ftpsocks.socket_cmd.sendall("226 List transfer done.".encode())
 
 def CMD_cwd(ftpsocks, basedir, command):
@@ -76,17 +79,18 @@ def CMD_cwd(ftpsocks, basedir, command):
     if len(spcmd) == 2:
         if spcmd[1] == '..':
             if basedir == os.getcwd():
-                # TODO: NO PERMITION
                 msg += "500 Error."
                 pass
             else:
                 os.chdir("..")
                 msg += "250 Successful Change."
         else:
-            os.chdir(spcmd[1])
-            msg += "250 Successful Change."
+            try:
+                os.chdir(spcmd[1])
+                msg += "250 Successful Change."
+            except:
+                msg = "500 Error."
     else:
         msg += "501 Syntax error in parameter or arguments."
     ftpsocks.socket_cmd.sendall(msg.encode())
-
-    
+    logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} changed dir to {os.getcwd()}")    

@@ -30,12 +30,15 @@ class Client:
             data = socket_command.recv(2048)
             print(data.decode())
 
+            # list of server responses
             if data.decode() == "226 List transfer done.":
                 datadata = socket_data.recv(2048)
-                # print(datadata.decode())
                 spdata = datadata.decode().split("$$")
-                for item in spdata:
-                    print(item)
+                if spdata[0] == "":
+                    pass
+                else:
+                    for item in spdata:
+                        print(item)
             
             
 
