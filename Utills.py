@@ -229,42 +229,42 @@ def send_email(mail):
     print(response.decode()[:-1])
     heloMsg = f"HELO localhost{crlf}"
     sock.sendall(heloMsg.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     authMsg = f"AUTH LOGIN{crlf}"
     sock.sendall(authMsg.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     un64 = base64.b64encode(mail.sender_UN.encode())
     pw64 = base64.b64encode(mail.sender_PW.encode())
     sock.sendall(un64)
     sock.sendall(crlf.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     sock.sendall(pw64)
     sock.sendall(crlf.encode())
-    respon = sock.recv(2048)
-    print(respon.decode()[:-1])
+    response = sock.recv(2048)
+    print(response.decode()[:-1])
     fromMsg = f"MAIL FROM: <{mail.sender_mail}>{crlf}"
     sock.sendall(fromMsg.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     rcptMsg = f"RCPT TO: <{mail.recipient_mail}> Notify=success,failure,{crlf}"
     sock.sendall(rcptMsg.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     dataMsg = f"DATA{crlf}"
     sock.sendall(dataMsg.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     subject = f"Subject: {mail.subject}{crlf}{crlf}"
     sock.sendall(subject.encode())
     mailbody = mail.body + crlf
     sock.send(mailbody.encode())
     EndOfData = f"{crlf}.{crlf}"
     sock.send(EndOfData.encode())
-    final_respond = sock.recv(2048)
-    print(final_respond.decode()[:-1])
+    final_response = sock.recv(2048)
+    print(final_response.decode()[:-1])
     quitMesg = f"QUIT{crlf}"
     sock.send(quitMesg.encode())
-    respon = sock.recv(2048)
+    response = sock.recv(2048)
     sock.close()
-    final_respond_sp = final_respond.decode().split(" ")
-    if final_respond_sp[2] == "Ok:":
+    final_response_sp = final_response.decode().split(" ")
+    if final_response_sp[2] == "Ok:":
         logging.info(f"Successfully sent email to {mail.recipient_mail}.")
     else:
         logging.info(f"Could not send email to {mail.recipient_mail}.")
