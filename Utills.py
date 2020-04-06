@@ -1,6 +1,10 @@
 import enum
 import os
 import logging
+import stat
+import shutil
+import errno
+
 
 class FTPSocks:
     def __init__(self, _socket_cmd, _address_cmd, _socket_data, _address_data):
@@ -32,6 +36,14 @@ def mapCommands(ftpsocks, _command, basedir):
 
     if spcmd[0] == 'CWD':
         CMD_cwd(ftpsocks, basedir, _command)
+        return ResState.done
+
+    if spcmd[0] == 'MKD':
+        CMD_mkd(ftpsocks, basedir, _command)
+        return ResState.done
+
+    if spcmd[0] == 'RMD':
+        CMD_rmd(ftpsocks, basedir, _command)
         return ResState.done
 
     CMD_unknwon(ftpsocks)
@@ -94,3 +106,61 @@ def CMD_cwd(ftpsocks, basedir, command):
         msg += "501 Syntax error in parameter or arguments."
     ftpsocks.socket_cmd.sendall(msg.encode())
     logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} changed dir to {os.getcwd()}")    
+
+
+def CMD_mkd(ftpsocks, basedir, command):
+    spcmd = command.split(" ")
+    msg = ""
+    if len(spcmd) == 2:
+        new_dir = spcmd[1]
+        path = os.path.join(basedir, new_dir)
+        os.mkdir(path)
+        msg += "257 " + str(spcmd[1]) + " created."
+        logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} created new directory: {spcmd[1]}")
+    elif len(spcmd) == 3 and spcmd[1] == "-i":
+        new_file = spcmd[2]
+        os.mknod(new_file, 0o600 | stat.S_IRUSR)
+        msg += "257 " + str(spcmd[2]) + " created."
+        logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} created new file: {spcmd[2]}")
+    else:
+        msg += "501 Syntax error in parameter or arguments."
+        logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} mkd syntax error {spcmd[1]}")
+
+    ftpsocks.socket_cmd.sendall(msg.encode())
+
+
+def CMD_rmd(ftpsocks, basedir, command):
+    spcmd = command.split(" ")
+    msg = ""
+    if len(spcmd) == 2:
+        filename = spcmd[1]
+        try:
+            os.remove(filename)
+            msg += "250 " + str(filename) + " deleted."
+            logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} file: {spcmd[1]} deleted")
+        except OSError as e:
+            msg = "500 Error."
+            if e.errno == errno.EISDIR: # is a dir
+                logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} RMD: entered a directory instead of file: {spcmd[1]}")
+            elif e.errno == errno.ENOENT: # no such file or directory
+                logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} RMD: No such a file exists: {spcmd[1]}")
+            else:
+                raise
+
+    elif len(spcmd) == 3 and spcmd[1] == "-f":
+        dirname = spcmd[2]
+        try:
+            shutil.rmtree(dirname)
+            msg += "250 " + str(dirname) + " deleted."
+            logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} directory: {spcmd[2]} deleted")
+        except OSError as e:
+            msg = "500 Error."
+            if e.errno == errno.ENOENT: # no such file or directory
+                logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} RMD: No such directory exists: {spcmd[2]}")
+            else:
+                raise
+    else:
+        msg += "501 Syntax error in parameter or arguments."
+        logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} rmd syntax error {spcmd[1]}")
+
+    ftpsocks.socket_cmd.sendall(msg.encode())
