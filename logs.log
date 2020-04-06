@@ -95,3 +95,6 @@
 2020-04-05 22:36:00,047  root  INFO  server is now running on data port of 8001 and command port of 8000
 2020-04-05 22:36:01,646  root  INFO  ('127.0.0.1', 54572) and ('127.0.0.1', 55546) is connected
 2020-04-05 22:37:22,362  root  INFO  ('127.0.0.1', 55546) ('127.0.0.1', 54572) is gone
+2020-04-06 10:08:54,203  root  INFO  server is now running on data port of 8001 and command port of 8000
+2020-04-06 10:08:58,597  root  INFO  ('127.0.0.1', 58930) and ('127.0.0.1', 38252) is connected
+2020-04-06 10:09:38,490  root  INFO  ('127.0.0.1', 38252) ('127.0.0.1', 58930) is gone

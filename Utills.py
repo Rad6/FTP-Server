@@ -47,7 +47,7 @@ def CMD_pwd(ftpsocks, basedir):
     if len(formal[1]) == 0:
         msg += '.'
     else:
-        msg += "./" + formal[1]
+        msg += "." + formal[1]
     ftpsocks.socket_cmd.sendall(msg.encode())
 
 
