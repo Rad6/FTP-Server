@@ -76,7 +76,7 @@ def CMD_cwd(ftpsocks, basedir, command):
     if len(spcmd) == 1:
         os.chdir(basedir)
         msg += "250 Successful Change."
-    if len(spcmd) == 2:
+    elif len(spcmd) == 2:
         if spcmd[1] == '..':
             if basedir == os.getcwd():
                 msg += "500 Error."
@@ -96,7 +96,6 @@ def CMD_cwd(ftpsocks, basedir, command):
     else:
         msg += "501 Syntax error in parameter or arguments."
     ftpsocks.socket_cmd.sendall(msg.encode())
-    logging.info(f"{ftpsocks.address_cmd} {ftpsocks.address_data} changed dir to {os.getcwd()}")    
 
 
 def is_in_directory(filepath, directory):
