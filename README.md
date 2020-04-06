@@ -32,7 +32,7 @@
    * __note__: if path was .. dir should be back to prev dir, if there was no path given, should change the path to the root (first dir)
 9. __DL__: downloads the file.
    * `DL <name>`
-   * `226 Successfule Download.`
+   * `226 Successful Download.`
    * __note__: the file is going to be downloaded via the __data channel__ after completion, the __msg__ has to be sent via the __command channel__.
 10. __HELP__: shows the commands that server understands with the way they're goning to be used. (sent via __command channel__)
       * `HELP`  

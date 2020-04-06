@@ -31,7 +31,7 @@ class Client:
             print(data.decode())
 
             code = data.decode().split(" ")[0]
-            if code == "226": # LIST response
+            if data.decode() == "226 List transfer done.": # LIST response
                 datadata = socket_data.recv(2048)
                 spdata = datadata.decode().split("$$")
                 if spdata[0] == "":
@@ -40,6 +40,17 @@ class Client:
                     for item in spdata:
                         print(item)
             
+            if data.decode() == "226 Successful Download.": # DL response
+                length_of_data = int(socket_data.recv(1024).decode())
+                socket_data.sendall("ok".encode())
+                with open(f"dl_{_input.split(' ')[1]}", 'wb') as file_to_write:
+                    while True:
+                        datadata = socket_data.recv(10)
+                        print(datadata)
+                        if datadata == "":
+                            break
+                            file_to_write.write(datadata)
+                    file_to_write.close()
             
 
    

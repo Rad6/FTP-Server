@@ -33,7 +33,11 @@ def mapCommands(ftpsocks, _command, basedir):
     if spcmd[0] == 'CWD':
         CMD_cwd(ftpsocks, basedir, _command)
         return ResState.done
-
+    
+    if spcmd[0] == 'DL':
+        CMD_download(ftpsocks, basedir, _command)
+        return ResState.done
+    
     CMD_unknwon(ftpsocks)
     return ResState.unknwon
 
@@ -101,3 +105,24 @@ def CMD_cwd(ftpsocks, basedir, command):
 def is_in_directory(filepath, directory):
     return os.path.realpath(filepath).startswith(
         os.path.realpath(directory) + os.sep)   
+
+def CMD_download(ftpsocks, basedir, command):
+    spcmd = command.split(" ")
+    msg = ""
+    if len(spcmd) == 1:
+        msg  = "501 Syntax error in parameter or arguments."
+    elif len(spcmd) == 2:
+        if spcmd[1] == "":
+            msg  = "501 Syntax error in parameter or arguments."
+        else:            
+            with open(spcmd[1], 'rb') as file:
+                # file
+                # for data in file:
+                #     print(data)
+                #     ftpsocks.socket_data.sendall(data)
+                data = file.read(1024)
+                while data:
+                    ftpsocks.socket_data.sendall(data)
+                msg = "226 Successful Download."
+    ftpsocks.socket_cmd.sendall(msg.encode())
+    
