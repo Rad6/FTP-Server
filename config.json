@@ -30,7 +30,7 @@
     ]
   },
   "logging": {
-    "enable": false,
+    "enable": true,
     "path": "./logs.log"
   },
   "authorization": {
