@@ -4,6 +4,12 @@ import logging
 import stat
 import shutil
 import errno
+import socket
+import base64
+
+
+mail_server = "mail.ut.ac.ir"
+mail_port = 25
 
 
 class FTPSocks:
@@ -12,6 +18,16 @@ class FTPSocks:
         self.address_cmd  = _address_cmd
         self.socket_data  = _socket_data
         self.address_data = _address_data
+
+
+class Mail:
+    def __init__(self, _sender_mail, _sender_UN, _sender_PW, _recipient_mail, _subject, _body):
+        self.sender_mail = _sender_mail
+        self.sender_UN = _sender_UN
+        self.sender_PW = _sender_PW
+        self.recipient_mail = _recipient_mail
+        self.subject = _subject
+        self.body = _body
 
 
 class ResState(enum.Enum):
@@ -203,3 +219,53 @@ def CMD_download(ftpsocks, basedir, command):
                 msg = "500 Error."
 
     ftpsocks.socket_cmd.sendall(msg.encode())
+
+
+def send_email(mail):
+    crlf = '\r\n'
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((mail_server, mail_port))
+    response = sock.recv(2048)
+    print(response.decode()[:-1])
+    heloMsg = f"HELO localhost{crlf}"
+    sock.sendall(heloMsg.encode())
+    respon = sock.recv(2048)
+    authMsg = f"AUTH LOGIN{crlf}"
+    sock.sendall(authMsg.encode())
+    respon = sock.recv(2048)
+    un64 = base64.b64encode(mail.sender_UN.encode())
+    pw64 = base64.b64encode(mail.sender_PW.encode())
+    sock.sendall(un64)
+    sock.sendall(crlf.encode())
+    respon = sock.recv(2048)
+    sock.sendall(pw64)
+    sock.sendall(crlf.encode())
+    respon = sock.recv(2048)
+    print(respon.decode()[:-1])
+    fromMsg = f"MAIL FROM: <{mail.sender_mail}>{crlf}"
+    sock.sendall(fromMsg.encode())
+    respon = sock.recv(2048)
+    rcptMsg = f"RCPT TO: <{mail.recipient_mail}> Notify=success,failure,{crlf}"
+    sock.sendall(rcptMsg.encode())
+    respon = sock.recv(2048)
+    dataMsg = f"DATA{crlf}"
+    sock.sendall(dataMsg.encode())
+    respon = sock.recv(2048)
+    subject = f"Subject: {mail.subject}{crlf}{crlf}"
+    sock.sendall(subject.encode())
+    mailbody = mail.body + crlf
+    sock.send(mailbody.encode())
+    EndOfData = f"{crlf}.{crlf}"
+    sock.send(EndOfData.encode())
+    final_respond = sock.recv(2048)
+    print(final_respond.decode()[:-1])
+    quitMesg = f"QUIT{crlf}"
+    sock.send(quitMesg.encode())
+    respon = sock.recv(2048)
+    sock.close()
+    final_respond_sp = final_respond.decode().split(" ")
+    if final_respond_sp[2] == "Ok:":
+        logging.info(f"Successfully sent email to {mail.recipient_mail}.")
+    else:
+        logging.info(f"Could not send email to {mail.recipient_mail}.")
+
