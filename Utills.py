@@ -88,7 +88,7 @@ class FTP:
             self.CMD_quit()
             return ResState.quit
 
-        if spcmd[0] in ['PWD', 'LIST', 'CWD', 'MKD', 'RMD', 'DL']:
+        if spcmd[0] in ['PWD', 'LIST', 'CWD', 'MKD', 'RMD', 'DL', 'HELP']:
             if not user.authenticated:
                 self.ftpsocks.socket_cmd.sendall("530 Not logged in.".encode())
                 return ResState.done
@@ -204,18 +204,20 @@ class FTP:
         msg = ""
         if len(spcmd) == 2:
             new_dir = spcmd[1]
-            path = os.path.join(self.dirs.basedir, new_dir)
+            # path = os.path.join(self.dirs.basedir, new_dir)
+            path = str(self.dirs.currdir / Path(new_dir))
             os.mkdir(path)
             msg += "257 " + str(spcmd[1]) + " created."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {spcmd[1]}")
+            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {new_dir}")
         elif len(spcmd) == 3 and spcmd[1] == "-i":
             new_file = spcmd[2]
-            os.mknod(new_file, 0o600 | stat.S_IRUSR)
-            msg += "257 " + str(spcmd[2]) + " created."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {spcmd[2]}")
+            path = str(self.dirs.currdir / Path(new_file))
+            os.mknod(path, 0o600 | stat.S_IRUSR)
+            msg += "257 " + str(new_file) + " created."
+            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {new_file}")
         else:
             msg += "501 Syntax error in parameter or arguments."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} mkd syntax error {spcmd[1]}")
+            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} mkd syntax error.")
 
         self.ftpsocks.socket_cmd.sendall(msg.encode())
 
@@ -225,8 +227,9 @@ class FTP:
         msg = ""
         if len(spcmd) == 2:
             filename = spcmd[1]
+            filepath = str(self.dirs.currdir / Path(filename))
             try:
-                os.remove(filename)
+                os.remove(filepath)
                 msg += "250 " + str(filename) + " deleted."
                 logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} file: {spcmd[1]} deleted")
             except OSError as e:
@@ -240,8 +243,9 @@ class FTP:
 
         elif len(spcmd) == 3 and spcmd[1] == "-f":
             dirname = spcmd[2]
+            dirpath = str(self.dirs.currdir / Path(dirname))
             try:
-                shutil.rmtree(dirname)
+                shutil.rmtree(dirpath)
                 msg += "250 " + str(dirname) + " deleted."
                 logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} directory: {spcmd[2]} deleted")
             except OSError as e:
