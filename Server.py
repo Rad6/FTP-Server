@@ -2,14 +2,16 @@ import socket
 import json
 import logging
 import threading
-from Utills import ResState, FTP, FTPSocks, User
+from Utills import ResState, FTP, FTPSocks, User, Dirs
 import os
+from pathlib import Path
 
 class ClientThread(threading.Thread):
     def __init__(self, ftpsocks, basedir):
         self.ftpsocks = ftpsocks
-        os.chdir('./ftp')
-        self.basedir = os.getcwd()
+        # os.chdir('./ftp')
+        # self.basedir = os.getcwd()
+        self.dirs = Dirs(basedir, basedir)
         self.user = User()
         threading.Thread.__init__(self)
 
@@ -19,7 +21,7 @@ class ClientThread(threading.Thread):
             data = self.ftpsocks.socket_cmd.recv(2048)
             message = data.decode()
             ftp = FTP()
-            state = ftp.mapCommands(self.user, self.ftpsocks, message, self.basedir)
+            state = ftp.mapCommands(self.user, self.ftpsocks, message, self.dirs)
             if state == ResState.quit:
                 break
         
@@ -41,7 +43,7 @@ class Server:
         self.HOST = "localhost"
         self.LOGGING = data['logging']['enable']
         self.PATH_LOGGING = data['logging']['path']
-        self.BASE_DIR = os.getcwd()
+        self.BASE_DIR = Path.cwd() / Path("ftp")
 
         # configuration of logging
         logging.basicConfig(

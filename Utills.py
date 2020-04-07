@@ -7,6 +7,7 @@ import errno
 import socket
 import base64
 import json
+from pathlib import Path
 
 mail_server = "mail.ut.ac.ir"
 mail_port = 25
@@ -56,7 +57,15 @@ class User:
             admin         : {self.admin}\n
             files         : {self.files}\n
             """
-
+class Dirs:
+    def __init__(self, basedir, currdir):
+        self.basedir = basedir
+        self.currdir = currdir
+    def __str__(self):
+        return f"""
+        basedir: {self.basedir}\n
+        currdir: {self.currdir}\n
+        """
 
 class ResState(enum.Enum):
     done = 1
@@ -67,11 +76,11 @@ class FTP:
     def __init__(self):
         pass
 
-    def mapCommands(self, user, ftpsocks, _command, basedir):
+    def mapCommands(self, user, ftpsocks, _command, dirs):
         self.user = user
         self.ftpsocks = ftpsocks
         self.command = _command
-        self.basedir = basedir
+        self.dirs = dirs
 
         spcmd = _command.split(" ")
 
@@ -124,8 +133,9 @@ class FTP:
         pass
         
     def CMD_pwd(self):
-        cur_dir  = os.getcwd()
-        formal = cur_dir.split(self.basedir)
+        # cur_dir  = os.getcwd()
+        cur_dir = str(self.dirs.currdir)
+        formal = cur_dir.split(str(self.dirs.basedir))
         msg = "257 "
         if len(formal[1]) == 0:
             msg += '.'
@@ -139,7 +149,7 @@ class FTP:
 
 
     def CMD_list(self):
-        dirs = os.listdir()
+        dirs = os.listdir(self.dirs.currdir)
         msg = ""
         for i in range(len(dirs)):
             if i == 0:
@@ -156,21 +166,26 @@ class FTP:
         spcmd = self.command.split(" ")
         msg = ""
         if len(spcmd) == 1:
-            os.chdir(self.basedir)
+            # os.chdir(self.dirs.basedir)
+            self.dirs.currdir = self.dirs.basedir
             msg += "250 Successful Change."
         elif len(spcmd) == 2:
             if spcmd[1] == '..':
-                if self.basedir == os.getcwd():
+                if self.dirs.basedir == self.dirs.currdir:
                     msg += "500 Error."
                     pass
                 else:
-                    os.chdir("..")
+                    # os.chdir("..")
+                    self.dirs.currdir = self.dirs.currdir.parent
                     msg += "250 Successful Change."
             else:
                 try:
-                    if self.is_in_directory(spcmd[1], self.basedir):
-                        os.chdir(spcmd[1])
+                    # if self.is_in_directory(spcmd[1], self.dirs.basedir):
+                    if (self.dirs.currdir / Path(spcmd[1])).is_dir():
+                        # os.chdir(spcmd[1])
+                        self.dirs.currdir = (self.dirs.currdir / Path(spcmd[1]))
                         msg += "250 Successful Change."
+                        logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} changed dir to {self.dirs.currdir}")
                     else:
                         msg = "500 Error."
                 except:
@@ -178,7 +193,6 @@ class FTP:
         else:
             msg += "501 Syntax error in parameter or arguments."
         self.ftpsocks.socket_cmd.sendall(msg.encode())
-        logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} changed dir to {os.getcwd()}")    
 
 
     def CMD_mkd(self):
@@ -186,7 +200,7 @@ class FTP:
         msg = ""
         if len(spcmd) == 2:
             new_dir = spcmd[1]
-            path = os.path.join(self.basedir, new_dir)
+            path = os.path.join(self.dirs.basedir, new_dir)
             os.mkdir(path)
             msg += "257 " + str(spcmd[1]) + " created."
             logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {spcmd[1]}")
@@ -253,8 +267,9 @@ class FTP:
                 msg  = "501 Syntax error in parameter or arguments."
             else: 
                 try:
-                    with open(spcmd[1], 'rb') as file:
-                        data_len = str(os.path.getsize(spcmd[1]))
+                    dl_dir = self.dirs.currdir / Path(spcmd[1])
+                    with open(str(dl_dir), 'rb') as file:
+                        data_len = str(os.path.getsize(dl_dir))
                         sendable_len = ""
                         for _ in range(13 - len(data_len)):
                             sendable_len += '0'
@@ -264,7 +279,8 @@ class FTP:
                                 self.ftpsocks.socket_data.sendall(data)
                         msg = "226 Successful Download."
                         logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} downloaded {spcmd[1]}")
-                except:
+                except Exception as err:
+                    print(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data}", err)
                     msg = "500 Error."
 
         self.ftpsocks.socket_cmd.sendall(msg.encode())
@@ -324,7 +340,9 @@ class FTP:
         if len(spcmd) != 2:
             msg = "500 Error."
         elif len(spcmd) == 2:
-            file = open(self.basedir.split('/ftp')[0] + "/config.json")
+            conf_dir = str(self.dirs.basedir.parent / Path("config.json"))
+            # file = open(self.dirs.basedir.split('/ftp')[0] + "/config.json")
+            file = open(conf_dir)
             data = json.load(file)
             file.close()
             if spcmd[1] in [item['user'] for item in data['users']]:
@@ -344,7 +362,9 @@ class FTP:
             if not self.user.username:
                 msg = '503 Bad sequence of self.commands.'
             else:
-                file = open(self.basedir.split('/ftp')[0] + "/config.json")
+                conf_dir = str(self.dirs.basedir.parent / Path("config.json"))
+                # file = open(self.dirs.basedir.split('/ftp')[0] + "/config.json")
+                file = open(conf_dir)
                 data = json.load(file)
                 for item in data['users']:
                     if item['user'] == self.user.username:
@@ -365,6 +385,7 @@ class FTP:
                                         self.user.admin = True
                                         self.user.files = data['authorization']['files']
                             print(self.user)
+                            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} logedin as {self.user.username}")
                             msg = "230 User logged in, proceed."
                         else:
                             msg = "430 Invalid username or password."
