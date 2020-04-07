@@ -9,8 +9,6 @@ from pathlib import Path
 class ClientThread(threading.Thread):
     def __init__(self, ftpsocks, basedir):
         self.ftpsocks = ftpsocks
-        # os.chdir('./ftp')
-        # self.basedir = os.getcwd()
         self.dirs = Dirs(basedir, basedir)
         self.user = User()
         threading.Thread.__init__(self)
@@ -22,10 +20,15 @@ class ClientThread(threading.Thread):
             message = data.decode()
             ftp = FTP()
             state = ftp.mapCommands(self.user, self.ftpsocks, message, self.dirs)
+
             if state == ResState.quit:
+                self.user = User()
+                self.dirs.currdir = self.dirs.basedir
+            
+            if state == ResState.exit:
                 break
+
         
-        # logging
         print ("# Client ", self.ftpsocks.address_cmd, self.ftpsocks.address_data , " is gone")
         logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} is gone")
 

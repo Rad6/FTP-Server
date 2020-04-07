@@ -27,23 +27,13 @@ class Client:
             
             _input = input("ftp> ")
             socket_command.sendall(_input.encode())
-            if _input == 'QUIT':
-                break
+            # if _input == 'QUIT':
+            #     continue
             if _input == '':
                 continue
             
             data = socket_command.recv(2048)
             print(data.decode())
-
-            # code = data.decode().split(" ")[0]
-            # if data.decode() == "226 List transfer done.": # LIST response
-            #     datadata = socket_data.recv(2048)
-            #     spdata = datadata.decode().split("$$")
-            #     if spdata[0] == "":
-            #         pass
-            #     else:
-            #         for item in spdata:
-            #             print(item)
 
             if data.decode() == "226 List transfer done.": # LIST response
                 data_len = 0

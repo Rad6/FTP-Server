@@ -9,6 +9,10 @@
     {
       "user": "farzad",
       "password": "5678"
+    },
+    {
+      "user": "kiarash",
+      "password": "haha"
     }
   ],
   "accounting": {
@@ -19,13 +23,19 @@
         "user": "navid",
         "size": "12000",
         "email": "navid@akbari.com",
-        "alert": true
+        "alert": false
       },
       {
         "user": "farzad",
         "size": "150000000",
         "email": "farzad@ahabibi.com",
         "alert": false
+      },
+      {
+        "user": "kiarash",
+        "size": "150",
+        "email": "kiarash.norouzi@ut.ac.ir",
+        "alert": true
       }
     ]
   },
