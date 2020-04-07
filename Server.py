@@ -2,7 +2,7 @@ import socket
 import json
 import logging
 import threading
-from Utills import ResState, mapCommands, FTPSocks, User
+from Utills import ResState, FTP, FTPSocks, User
 import os
 
 class ClientThread(threading.Thread):
@@ -18,8 +18,8 @@ class ClientThread(threading.Thread):
         while True:
             data = self.ftpsocks.socket_cmd.recv(2048)
             message = data.decode()
-
-            state = mapCommands(self.user, self.ftpsocks, message, self.basedir)
+            ftp = FTP()
+            state = ftp.mapCommands(self.user, self.ftpsocks, message, self.basedir)
             if state == ResState.quit:
                 break
         
