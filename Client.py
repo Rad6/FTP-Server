@@ -35,21 +35,37 @@ class Client:
             data = socket_command.recv(2048)
             print(data.decode())
 
-            code = data.decode().split(" ")[0]
+            # code = data.decode().split(" ")[0]
+            # if data.decode() == "226 List transfer done.": # LIST response
+            #     datadata = socket_data.recv(2048)
+            #     spdata = datadata.decode().split("$$")
+            #     if spdata[0] == "":
+            #         pass
+            #     else:
+            #         for item in spdata:
+            #             print(item)
+
             if data.decode() == "226 List transfer done.": # LIST response
-                datadata = socket_data.recv(2048)
-                spdata = datadata.decode().split("$$")
+                data_len = 0
+                count = 0
+                whole_data = ""
+                data_len = int(socket_data.recv(13).decode())
+                while count < data_len:
+                    datadata = socket_data.recv(10)
+                    count += len(datadata)
+                    whole_data += datadata.decode()
+                spdata = whole_data.split('$$')
                 if spdata[0] == "":
                     pass
                 else:
                     for item in spdata:
                         print(item)
-            
+
             if data.decode() == "226 Successful Download.": # DL response
                 data_len  = 0
                 count = 0
                 # with open(f"dl_{_input.split(' ')[1]}", 'wb') as file_to_write:
-                with open(os.path.join(Path.home(), f"Downloads/{_input.split(' ')[1]}"), 'wb') as file_to_write:
+                with open(os.path.join(Path.home(), f"Downloads/{_input.split(' ')[1].split('/')[-1]}"), 'wb') as file_to_write:
                     data_len = int(socket_data.recv(13).decode())
                     while count < data_len:
                         datadata = socket_data.recv(10)

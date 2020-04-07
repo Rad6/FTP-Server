@@ -66,6 +66,10 @@ class Dirs:
         basedir: {self.basedir}\n
         currdir: {self.currdir}\n
         """
+    @staticmethod
+    def abs_to_rel(base, curr):
+        return "." + curr.split(base)[1]
+
 
 class ResState(enum.Enum):
     done = 1
@@ -153,17 +157,40 @@ class FTP:
 
 
     def CMD_list(self):
-        dirs = os.listdir(self.dirs.currdir)
+        _dirs = os.listdir(self.dirs.currdir)
+
+
         msg = ""
-        for i in range(len(dirs)):
-            if i == 0:
-                msg += dirs[i]
-            else:
-                msg += "$$" + dirs[i]
+        first = True
+        for item in _dirs:
+            _path = self.dirs.currdir / Path(item)
+
+            allow_to_add = True
+            if not self.user.admin:
+                if Dirs.abs_to_rel(str(self.dirs.basedir), str(_path)) in self.user.files:
+                    allow_to_add = False
+
+            if allow_to_add:
+                if _path.is_dir():
+                    _type = "D:"
+                else:
+                    _type = "F:"
+                
+                if first:
+                    msg += _type + item
+                    first = False
+                else:
+                    msg += "$$" + _type + item
+
         if msg == "":
-            self.ftpsocks.socket_data.sendall("$$".encode())    
-        else:
-            self.ftpsocks.socket_data.sendall(msg.encode())
+            msg = "$$"
+        sendable_len = ""
+        data_len = str(len(msg))
+        for _ in range(13 - len(data_len)):
+            sendable_len += '0'
+        sendable_len += data_len
+        self.ftpsocks.socket_data.sendall(sendable_len.encode())
+        self.ftpsocks.socket_data.sendall(msg.encode())
         self.ftpsocks.socket_cmd.sendall("226 List transfer done.".encode())
 
     def CMD_cwd(self):
@@ -204,18 +231,20 @@ class FTP:
         msg = ""
         if len(spcmd) == 2:
             new_dir = spcmd[1]
-            path = os.path.join(self.dirs.basedir, new_dir)
+            # path = os.path.join(self.dirs.basedir, new_dir)
+            path = str(self.dirs.currdir / Path(new_dir))
             os.mkdir(path)
             msg += "257 " + str(spcmd[1]) + " created."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {spcmd[1]}")
+            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {new_dir}")
         elif len(spcmd) == 3 and spcmd[1] == "-i":
             new_file = spcmd[2]
-            os.mknod(new_file, 0o600 | stat.S_IRUSR)
-            msg += "257 " + str(spcmd[2]) + " created."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {spcmd[2]}")
+            path = str(self.dirs.currdir / Path(new_file))
+            os.mknod(path, 0o600 | stat.S_IRUSR)
+            msg += "257 " + str(new_file) + " created."
+            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {new_file}")
         else:
             msg += "501 Syntax error in parameter or arguments."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} mkd syntax error {spcmd[1]}")
+            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} mkd syntax error.")
 
         self.ftpsocks.socket_cmd.sendall(msg.encode())
 
@@ -225,8 +254,9 @@ class FTP:
         msg = ""
         if len(spcmd) == 2:
             filename = spcmd[1]
+            filepath = str(self.dirs.currdir / Path(filename))
             try:
-                os.remove(filename)
+                os.remove(filepath)
                 msg += "250 " + str(filename) + " deleted."
                 logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} file: {spcmd[1]} deleted")
             except OSError as e:
@@ -240,8 +270,9 @@ class FTP:
 
         elif len(spcmd) == 3 and spcmd[1] == "-f":
             dirname = spcmd[2]
+            dirpath = str(self.dirs.currdir / Path(dirname))
             try:
-                shutil.rmtree(dirname)
+                shutil.rmtree(dirpath)
                 msg += "250 " + str(dirname) + " deleted."
                 logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} directory: {spcmd[2]} deleted")
             except OSError as e:
@@ -272,17 +303,42 @@ class FTP:
             else: 
                 try:
                     dl_dir = self.dirs.currdir / Path(spcmd[1])
+                    if dl_dir < self.dirs.basedir:
+                        raise
                     with open(str(dl_dir), 'rb') as file:
                         data_len = str(os.path.getsize(dl_dir))
-                        sendable_len = ""
-                        for _ in range(13 - len(data_len)):
-                            sendable_len += '0'
-                        sendable_len += data_len
-                        self.ftpsocks.socket_data.sendall(f"{sendable_len}".encode())
-                        for data in file:
-                                self.ftpsocks.socket_data.sendall(data)
-                        msg = "226 Successful Download."
-                        logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} downloaded {spcmd[1]}")
+
+                        allow_to_downlaod = True
+
+                        if self.user.authorization and allow_to_downlaod:
+                            if not self.user.admin:
+                                if Dirs.abs_to_rel(str(self.dirs.basedir), str(dl_dir)) in self.user.files:
+                                    allow_to_downlaod = False
+                                    msg = "‬‬550 File unavailable"
+
+                        if self.user.accounting and allow_to_downlaod:
+                            if (int(self.user.capacity) - int(data_len)) < 0:
+                                allow_to_downlaod = False
+                                msg = "425 Can't open data connection."
+                            else:
+                                self.user.capacity = str(int(self.user.capacity) -  int(data_len))
+                                print(f"{self.user}")
+                                if int(self.user.capacity) < self.user.threshold:
+                                    # TODO: EMIL USER
+                                    pass
+                        
+                        
+                        if allow_to_downlaod:
+                            sendable_len = ""
+                            for _ in range(13 - len(data_len)):
+                                sendable_len += '0'
+                            sendable_len += data_len
+                            self.ftpsocks.socket_data.sendall(f"{sendable_len}".encode())
+                            for data in file:
+                                    self.ftpsocks.socket_data.sendall(data)
+                            msg = "226 Successful Download."
+                            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} downloaded {spcmd[1]}")
+
                 except Exception as err:
                     print(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data}", err)
                     msg = "500 Error."
@@ -387,7 +443,7 @@ class FTP:
                                     self.user.authorization = True
                                     if self.user.username in data['authorization']['admins']:
                                         self.user.admin = True
-                                        self.user.files = data['authorization']['files']
+                                    self.user.files = data['authorization']['files']
                             print(self.user)
                             logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} logedin as {self.user.username}")
                             msg = "230 User logged in, proceed."
