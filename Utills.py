@@ -6,7 +6,7 @@ import shutil
 import errno
 import socket
 import base64
-
+import json
 
 mail_server = "mail.ut.ac.ir"
 mail_port = 25
@@ -29,19 +29,52 @@ class Mail:
         self.subject = _subject
         self.body = _body
 
+class User:
+    def __init__(self):
+        self.username = ""
+        self.password = ""
+        self.authenticated = False
+        self.email    = ""
+        self.accounting = False
+        self.threshold = 0
+        self.capacity = 0
+        self.alert = False
+        self.authorization = False
+        self.admin = False
+        self.files = []
+    def __str__(self):
+        return f"""
+            user          : {self.username}\n
+            pass          : {self.password}\n
+            authorized    : {self.authenticated}\n
+            accounting    : {self.accounting}\n
+            email         : {self.email}\n
+            threshold     : {self.threshold}\n
+            capacity      : {self.capacity}\n
+            alert         : {self.alert}\n
+            authorization : {self.authorization}\n
+            admin         : {self.admin}\n
+            files         : {self.files}\n
+            """
+
 
 class ResState(enum.Enum):
     done = 1
     quit = 2
     unknwon = 3
 
-def mapCommands(ftpsocks, _command, basedir):
+def mapCommands(user, ftpsocks, _command, basedir):
     spcmd = _command.split(" ")
 
     if spcmd[0] == 'QUIT' or len(spcmd[0]) == 0:
         CMD_quit()
         return ResState.quit
-    
+
+    if spcmd[0] in ['PWD', 'LIST', 'CWD', 'MKD', 'RMD', 'DL']:
+        if not user.authenticated:
+            ftpsocks.socket_cmd.sendall("530 Not logged in.".encode())
+            return ResState.done
+            
     if spcmd[0] == 'PWD' :
         CMD_pwd(ftpsocks, basedir)
         return ResState.done
@@ -62,11 +95,18 @@ def mapCommands(ftpsocks, _command, basedir):
         CMD_rmd(ftpsocks, basedir, _command)
         return ResState.done
 
-    
     if spcmd[0] == 'DL':
         CMD_download(ftpsocks, basedir, _command)
         return ResState.done
     
+    if spcmd[0] == 'USER':
+        CMD_user(user, ftpsocks, basedir, _command)
+        return ResState.done
+    
+    if spcmd[0] == 'PASS':
+        CMD_pass(user, ftpsocks, basedir, _command)
+        return ResState.done
+
     CMD_unknwon(ftpsocks)
     return ResState.unknwon
 
@@ -269,3 +309,54 @@ def send_email(mail):
     else:
         logging.info(f"Could not send email to {mail.recipient_mail}.")
 
+def CMD_user(user, ftpsocks, basedir, command):
+    spcmd  = command.split(" ")
+    msg = ""
+    if len(spcmd) != 2:
+        msg = "500 Error."
+    elif len(spcmd) == 2:
+        file = open(basedir.split('/ftp')[0] + "/config.json")
+        data = json.load(file)
+        file.close()
+        if spcmd[1] in [item['user'] for item in data['users']]:
+            msg = "331 User name okay, need password."
+            user.username = spcmd[1]
+        else:
+            msg = "404 Invalid User."
+
+    ftpsocks.socket_cmd.sendall(msg.encode())
+
+def CMD_pass(user, ftpsocks, basedir, command):
+    spcmd  = command.split(" ")
+    msg = ""
+    if len(spcmd) != 2:
+        msg = "500 Error."
+    else:
+        if not user.username:
+            msg = '503 Bad sequence of commands.'
+        else:
+            file = open(basedir.split('/ftp')[0] + "/config.json")
+            data = json.load(file)
+            for item in data['users']:
+                if item['user'] == user.username:
+                    if item['password'] == spcmd[1]:
+                        user.password = item["password"]
+                        user.authenticated = True
+                        if data['accounting']['enable']:
+                            user.accounting = True
+                            user.threshold  = data['accounting']['threshold']
+                            for item in data['accounting']['users']:
+                                if item['user'] == user.username:
+                                    user.email = item['email']
+                                    user.capacity = item['size']
+                                    user.alert = item['alert']
+                            if data['authorization']['enable']:
+                                user.authorization = True
+                                if user.username in data['authorization']['admins']:
+                                    user.admin = True
+                                    user.files = data['authorization']['files']
+                        print(user)
+                        msg = "230 User logged in, proceed."
+                    else:
+                        msg = "430 Invalid username or password."
+    ftpsocks.socket_cmd.sendall(msg.encode())
