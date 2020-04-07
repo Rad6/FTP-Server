@@ -206,15 +206,27 @@ class FTP:
             new_dir = spcmd[1]
             # path = os.path.join(self.dirs.basedir, new_dir)
             path = str(self.dirs.currdir / Path(new_dir))
-            os.mkdir(path)
-            msg += "257 " + str(spcmd[1]) + " created."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {new_dir}")
+            try:
+                os.mkdir(path)
+                msg += "257 " + str(new_dir) + " created."
+                logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {new_dir}")
+            except OSError as e:
+                if e.errno == errno.EEXIST:
+                    msg = "500 Error."
+                else:
+                    raise
         elif len(spcmd) == 3 and spcmd[1] == "-i":
             new_file = spcmd[2]
             path = str(self.dirs.currdir / Path(new_file))
-            os.mknod(path, 0o600 | stat.S_IRUSR)
-            msg += "257 " + str(new_file) + " created."
-            logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {new_file}")
+            try:
+                os.mknod(path, 0o600 | stat.S_IRUSR)
+                msg += "257 " + str(new_file) + " created."
+                logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {new_file}")
+            except OSError as e:
+                if e.errno == errno.EEXIST:
+                    msg = "500 Error."
+                else:
+                    raise
         else:
             msg += "501 Syntax error in parameter or arguments."
             logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} mkd syntax error.")
