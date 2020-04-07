@@ -125,6 +125,10 @@ class FTP:
             self.CMD_pass()
             return ResState.done
 
+        if spcmd[0] == 'HELP':
+            self.CMD_help()
+            return ResState.done
+
         self.CMD_unknwon()
         return ResState.unknwon
 
@@ -389,4 +393,25 @@ class FTP:
                             msg = "230 User logged in, proceed."
                         else:
                             msg = "430 Invalid username or password."
+        self.ftpsocks.socket_cmd.sendall(msg.encode())
+
+    def CMD_help(self):
+        msg = """214
+USER [username] : Its argument is used to specify the user's string. It is used
+                  for user authentication.
+PASS [password] : Its argument is a password for user's account who has already
+                  entered his/her username.
+PWD             : Simply shows the current directory that user is in.
+MKD -i [name]   : It creates a new file or directory with the given name. With 
+                  an -i flag the program makes a new file and otherwise a new 
+                  directory.
+RMD -f [name]   : Removes a file or directory specified by [name]. The -f flag
+                  removes a directory and otherwise a file will be removed!
+LIST            : Shows the existing files in the current directory.
+CWD [path]      : Changes the current directory to [path]. In case of ".." as 
+                  input, program goes to the previous directory and if used 
+                  with no argument, current directory changes to root (/ftp).
+DL [name]       : It downloads the file specified by [name]
+HELP            : Displays this information.
+QUIT            : It logs out the user from program."""
         self.ftpsocks.socket_cmd.sendall(msg.encode())
