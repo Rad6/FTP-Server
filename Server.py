@@ -39,10 +39,10 @@ class Server:
     def __init__(self):
         with open('config.json') as f:
             data = json.load(f)
-        # self.PORT_COMMAND = data['commandChannelPort']
-        # self.PORT_DATA = data['dataChannelPort']
-        self.PORT_COMMAND = 8080
-        self.PORT_DATA = 8081
+        self.PORT_COMMAND = data['commandChannelPort']
+        self.PORT_DATA = data['dataChannelPort']
+        # self.PORT_COMMAND = 8080
+        # self.PORT_DATA = 8081
         self.HOST = "localhost"
         self.LOGGING = data['logging']['enable']
         self.PATH_LOGGING = data['logging']['path']

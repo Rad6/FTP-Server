@@ -2,20 +2,15 @@ import socket
 import enum
 from pathlib import Path
 import os
-
-class State(enum.Enum): 
-    start        = 1
-    authenticate = 4
-    quit         = 2 
-    waiing       = 3
+import json
 
 class Client:
     def __init__(self):
         self.HOST = "localhost"
-        self.PORT_COMMAND = 8080
-        self.PORT_DATA = 8081
-        self.STATE = State.start
-        self.authenticated = False
+        with open('config.json') as f:
+            data = json.load(f)
+        self.PORT_COMMAND = data['commandChannelPort']
+        self.PORT_DATA = data['dataChannelPort']
 
     def run(self):
         socket_command = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -27,8 +22,6 @@ class Client:
             
             _input = input("ftp> ")
             socket_command.sendall(_input.encode())
-            # if _input == 'QUIT':
-            #     continue
             if _input == '':
                 continue
             
@@ -54,7 +47,6 @@ class Client:
             if data.decode() == "226 Successful Download.": # DL response
                 data_len  = 0
                 count = 0
-                # with open(f"dl_{_input.split(' ')[1]}", 'wb') as file_to_write:
                 with open(os.path.join(Path.home(), f"Downloads/{_input.split(' ')[1].split('/')[-1]}"), 'wb') as file_to_write:
                     data_len = int(socket_data.recv(13).decode())
                     while count < data_len:
