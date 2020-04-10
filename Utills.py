@@ -237,10 +237,11 @@ class FTP:
                 msg += "257 " + str(new_dir) + " created."
                 logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new directory: {new_dir}")
             except OSError as e:
+                msg = "500 Error."
                 if e.errno == errno.EEXIST:
-                    msg = "500 Error."
+                    logging.error(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} This name already exists: {new_dir}")
                 else:
-                    raise
+                    pass
         elif len(spcmd) == 3 and spcmd[1] == "-i":
             new_file = spcmd[2]
             path = str(self.dirs.currdir / Path(new_file))
@@ -249,10 +250,11 @@ class FTP:
                 msg += "257 " + str(new_file) + " created."
                 logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} created new file: {new_file}")
             except OSError as e:
+                msg = "500 Error."
                 if e.errno == errno.EEXIST:
-                    msg = "500 Error."
+                    logging.error(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} This name already exists: {new_file}")
                 else:
-                    raise
+                    pass
         else:
             msg += "501 Syntax error in parameter or arguments."
             logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} mkd syntax error.")
@@ -266,18 +268,21 @@ class FTP:
         if len(spcmd) == 2:
             filename = spcmd[1]
             filepath = str(self.dirs.currdir / Path(filename))
-            try:
-                os.remove(filepath)
-                msg += "250 " + str(filename) + " deleted."
-                logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} file: {spcmd[1]} deleted")
-            except OSError as e:
-                msg = "500 Error."
-                if e.errno == errno.EISDIR: # is a dir
-                    logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} RMD: entered a directory instead of file: {spcmd[1]}")
-                elif e.errno == errno.ENOENT: # no such file or directory
-                    logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} RMD: No such a file exists: {spcmd[1]}")
-                else:
-                    raise
+            if self.user.admin is False and Dirs.abs_to_rel(str(self.dirs.basedir), str(filepath)) in self.user.files:
+                msg += "550 file not available."
+            else:
+                try:
+                    os.remove(filepath)
+                    msg += "250 " + str(filename) + " deleted."
+                    logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} file: {spcmd[1]} deleted")
+                except OSError as e:
+                    msg = "500 Error."
+                    if e.errno == errno.EISDIR: # is a dir
+                        logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} RMD: entered a directory instead of file: {spcmd[1]}")
+                    elif e.errno == errno.ENOENT: # no such file or directory
+                        logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} RMD: No such a file exists: {spcmd[1]}")
+                    else:
+                        pass
 
         elif len(spcmd) == 3 and spcmd[1] == "-f":
             dirname = spcmd[2]
@@ -291,7 +296,7 @@ class FTP:
                 if e.errno == errno.ENOENT: # no such file or directory
                     logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} RMD: No such directory exists: {spcmd[2]}")
                 else:
-                    raise
+                    pass
         else:
             msg += "501 Syntax error in parameter or arguments."
             logging.info(f"{self.ftpsocks.address_cmd} {self.ftpsocks.address_data} rmd syntax error {spcmd[1]}")
